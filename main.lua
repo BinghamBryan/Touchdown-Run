@@ -3,8 +3,27 @@
 --Remove Staus bar
 display.setStatusBar( display.HiddenStatusBar );
 
+--Requires
+local graphics = require("graphics");
 --Game Variables
 local speed = 5;
+local right = true;
+
+--Sprites
+local sheetOptions = {
+	width = 100,
+	height = 100,
+	numFrames = 7,
+
+	sheetContentWidth = 700,
+	sheetContentHeight = 100
+};
+local spriteSheet = graphics.newImageSheet("images/monsterSpriteSheet.png", sheetOptions);
+
+local sequnceData = {
+	{ name = "running", start = 1, count = 6, time = 600, loopCount = 0 },
+	{ name = "jumping", start = 7, count = 1, time = 1, loopCount = 1 }
+};
 
 --Background
 local backbackround = display.newImage( "images/background.png" );
@@ -54,13 +73,41 @@ for a = 1, 8, 1 do
 	newBlock.y = groundLevel;
 	blocks:insert(newBlock);
 end
+--Hero
+local hero = display.newSprite(spriteSheet, sequnceData);
+hero.x = display.contentWidth / 2;
+hero.y = display.contentHeight / 2;
 
+hero:setSequence("running");
+hero:play();
+
+--Game Loop
 local function update( event )
 	updateBackgrounds();
 	updateBlocks();
 	speed = speed + .05;
+
+	--Move Hero
+	if (right) then
+		hero.x = hero.x + 3;
+	else
+		hero.x = hero.x - 3;
+	end
+
+	if (hero.x > 380) then
+		right = false;
+		hero.xScale = -1;
+	end
+	
+	if (hero.x < - 60) then
+		right = true;
+		hero.xScale = 1;
+	end
 end
 
+
+
+--Functions
 function updateBlocks()
 	for i = 1, blocks.numChildren, 1 do
 		if (i > 1) then
