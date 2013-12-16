@@ -10,6 +10,8 @@ local graphics = require("graphics");
 local speed = 5;
 local onGround = true;
 local wasOnGround = true;
+local inEvent = 0;
+local eventRun = 0;
 
 --Sprites
 local sheetOptions = {
@@ -128,7 +130,7 @@ function updateBackgrounds()
 end
 
 function updateSpeed()
-	speed = speed + .05;
+	speed = speed + .0005;
 end
 
 function updateMonster()
@@ -161,7 +163,12 @@ function updateBlocks()
 			newX = (blocks[8]).x + 79 - speed;
 		end
 		if ((blocks[i]).x < -40) then
-			(blocks[i]).x, (blocks[i]).y = newX, groundLevel;
+			if (inEvent == 11) then
+				(blocks[i]).x, (blocks[i]).y = newX, 600;
+			else
+				(blocks[i]).x, (blocks[i]).y = newX, groundLevel;
+			end
+			checkEvent();
 		else
 			(blocks[i]):translate( speed * -1, 0 );
 		end
@@ -185,6 +192,47 @@ function checkCollisions()
 		else
 			onGround = false;
 		end
+	end
+end
+
+function checkEvent()
+	if (eventRun > 0) then
+		eventRun = eventRun - 1;
+		if (eventRun == 0) then
+			inEvent = 0;
+		end
+	end
+
+	if (inEvent > 0 and eventRun > 0) then
+		--do nothing
+	else
+		local check = math.random(100);
+		if (check > 80 and check < 99) then
+			inEvent = math.random(10);
+			eventRun = 1;
+		end
+		if (check > 98) then
+			inEvent = 11;
+			eventRun = 2;
+		end
+	end
+	if (inEvent > 0) then
+		runEvent();
+	end
+end
+
+function runEvent()
+	if (inEvent < 6) then
+		groundLevel = groundLevel + 40;
+	end
+	if (inEvent > 5 and inEvent < 11) then
+		groundLevel = groundLevel - 40;
+	end
+	if (groundLevel < groundMax) then
+		groundLevel = groundMax;
+	end
+	if (groundLevel > groundMin) then
+		groundLevel = groundMin;
 	end
 end
 
