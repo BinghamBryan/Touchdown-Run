@@ -12,6 +12,13 @@ local onGround = true;
 local wasOnGround = true;
 local inEvent = 0;
 local eventRun = 0;
+local score = 0;
+
+local scoreText = display.newText("score: " .. score, 0, 0, "BorisBlackBloxx", 50);
+scoreText.anchorX = 0;
+scoreText.anchorY = 0;
+scoreText.x = 0;
+scoreText.y = 0;
 
 --Sprites
 local sheetOptions = {
@@ -123,6 +130,7 @@ monster.x = 110;
 monster.y = 200;
 monster.gravity = -6;
 monster.accel = 0;
+monster.isAlive = true;
 
 monster:setSequence("running");
 monster:play();
@@ -133,6 +141,12 @@ collisionRect.strokeWidth = 1;
 collisionRect:setFillColor( 140, 140, 140 );
 collisionRect:setStrokeColor( 180, 180, 180 );
 collisionRect.alpha = 0;
+
+--Game Over
+local gameOver = display.newImage( "images/gameOver.png" );
+gameOver.name = "gameOver";
+gameOver.x = 0;
+gameOver.y = 500;
 
 --Load Groups
 screen:insert(backbackround);
@@ -145,6 +159,8 @@ screen:insert(blasts);
 screen:insert(ghosts);
 screen:insert(monster);
 screen:insert(collisionRect);
+screen:insert(scoreText);
+screen:insert(gameOver);
 
 --Game Loop
 local function update( event )
@@ -178,24 +194,27 @@ function updateSpeed()
 end
 
 function updateMonster()
-	if (onGround) then
-		if (wasOnGround) then
+	if (monster.isAlive == true) then
+		if (onGround) then
+			if (wasOnGround) then
+			else
+				monster:setSequence( "running" );
+				monster:play();
+			end
 		else
-			monster:setSequence( "running" );
+			monster:setSequence( "jumping" );
 			monster:play();
 		end
+
+		if (monster.accel > 0) then
+			monster.accel = monster.accel - 1;
+		end
+
+		monster.y = monster.y - monster.accel;
+		monster.y = monster.y - monster.gravity;
 	else
-		monster:setSequence( "jumping" );
-		monster:play();
+		monster:rotate(5);
 	end
-
-	if (monster.accel > 0) then
-		monster.accel = monster.accel - 1;
-	end
-
-	monster.y = monster.y - monster.accel;
-	monster.y = monster.y - monster.gravity;
-
 	collisionRect.y = monster.y;	
 end
 
@@ -207,6 +226,8 @@ function updateBlocks()
 			newX = (blocks[8]).x + 79 - speed;
 		end
 		if ((blocks[i]).x < -40) then
+			score = score + 1;
+			scoreText.text = "score: " .. score;
 			if (inEvent == 11) then
 				(blocks[i]).x, (blocks[i]).y = newX, 600;
 			else
@@ -239,6 +260,10 @@ function checkCollisions()
 	for i = 1, blocks.numChildren, 1 do
 		if (collisionRect.y - 10 > blocks[i].y - 170 and blocks[i].x - 40 < collisionRect.x and blocks[i].x + 40 > collisionRect.x) then
 			speed = 0;
+			monster.isAlive = false;
+			monster:pause( );
+			gameOver.x = display.contentWidth * .65;
+			gameOver.y = display.contentHeight / 2;
 		end
 	end
 
@@ -258,6 +283,10 @@ function checkCollisions()
 			if (collisionRect.y - 10 > spikes[i].y - 170 and spikes[i].x - 40 < collisionRect.x and spikes[i].x + 40 > collisionRect.x) then
 				--stop the monster
 				speed = 0;
+				monster.isAlive = false;
+				monster:pause( );
+				gameOver.x = display.contentWidth * .65;
+				gameOver.y = display.contentHeight / 2;
 			end
 		end
 	end
@@ -267,6 +296,10 @@ function checkCollisions()
 		if (ghosts[i].isAlive == true) then
 			if (((((monster.y - ghosts[i].y)) < 70) and ((monster.y - ghosts[i].y) > -70)) and (ghosts[i].x - 40 < collisionRect.x and ghosts[i].x + 40 > collisionRect.x)) then
 				speed = 0;
+				monster.isAlive = false;
+				monster:pause( );
+				gameOver.x = display.contentWidth * .65;
+				gameOver.y = display.contentHeight / 2;
 			end
 		end
 	end
@@ -417,20 +450,69 @@ function runEvent()
 	end
 end
 
+--Restart Game
+function restartGame()
+	gameOver.x = 0;
+	gameOver.y = 500;
+
+	score = 0;
+
+	speed = 5;
+
+	monster.isAlive = true;
+	monster.x = 110;
+	monster.y = 200;
+	monster:setSequence("running");
+	monster:play();
+	monster.rotation = 0;
+
+	groundLevel = groundMin;
+	for i = 1, blocks.numChildren, 1 do
+		blocks[i].x = (i * 79) - 79;
+		blocks[i].y = groundLevel;
+	end
+
+	for i = 1, ghosts.numChildren, 1 do
+		ghosts[i].x = 800;
+		ghosts[i].y = 600;
+	end
+
+	for i = 1, spikes.numChildren, 1 do
+		spikes[i].x = 900;
+		spikes[i].y = 500;
+	end
+
+	for i = 1, blasts.numChildren, 1 do
+		blasts[i].x = 800;
+		blasts[i].y = 500;
+	end
+
+	backgroundfar.x = 480;
+	backgroundfar.y = 160;
+	backgroundnear1.x = 240;
+	backgroundnear1.y = 160;
+	backgroundnear2.x = 760;
+	backgroundnear2.y = 160;
+end
+
 --Listener functions
 function touched( event )
-	if (event.phase == "began") then
-		if (event.x < 241) then
-			if (onGround) then
-				monster.accel = monster.accel + 20;
-			end
-		else
-			for i = 1, blasts.numChildren, 1 do
-				if (blasts[i].isAlive == false) then
-					blasts[i].isAlive = true;
-					blasts[i].x = monster.x + 50;
-					blasts[i].y = monster.y;
-					break;
+	if (event.x < gameOver.x + 150 and event.x > gameOver.x - 150 and event.y < gameOver.y + 95 and event.y > gameOver.y - 95) then
+		restartGame();
+	else
+		if (event.phase == "began") then
+			if (event.x < 241) then
+				if (onGround) then
+					monster.accel = monster.accel + 20;
+				end
+			else
+				for i = 1, blasts.numChildren, 1 do
+					if (blasts[i].isAlive == false) then
+						blasts[i].isAlive = true;
+						blasts[i].x = monster.x + 50;
+						blasts[i].y = monster.y;
+						break;
+					end
 				end
 			end
 		end
