@@ -43,6 +43,7 @@ local screen = display.newGroup();
 local ghosts = display.newGroup();
 local spikes = display.newGroup();
 local blasts = display.newGroup();
+local bossSpits = display.newGroup();
 
 --Background
 local backbackround = display.newImage( "images/background.png" );
@@ -126,7 +127,7 @@ end
 
 --monster
 local monster = display.newSprite(spriteSheet, sequnceData);
-monster.x = 110;
+monster.x = 60;
 monster.y = 200;
 monster.gravity = -6;
 monster.accel = 0;
@@ -141,6 +142,26 @@ collisionRect.strokeWidth = 1;
 collisionRect:setFillColor( 140, 140, 140 );
 collisionRect:setStrokeColor( 180, 180, 180 );
 collisionRect.alpha = 0;
+
+--Boss
+local boss = display.newImage( "boss.png", 150, 150 );
+boss.x = 300;
+boss.y = 550;
+boss.isAlive = false;
+boss.health = 10;
+boss.goingDown = true;
+boss.canShoot = false;
+boss.spitCycle = 0;
+
+for i = 1, 3, 1 do
+	local bossSpit = display.newImage( "bossSpit.png" );
+	bossSpit.x = 400;
+	bossSpit.y = 550;
+	bossSpit.isAlive = false;
+	bossSpit.speed = 3;
+	bossSpit.speed = 3;
+	bossSpits:insert(bossSpits);
+end
 
 --Game Over
 local gameOver = display.newImage( "images/gameOver.png" );
@@ -159,6 +180,8 @@ screen:insert(blasts);
 screen:insert(ghosts);
 screen:insert(monster);
 screen:insert(collisionRect);
+screen:insert(boss);
+screen:insert(bossSpits);
 screen:insert(scoreText);
 screen:insert(gameOver);
 
@@ -172,6 +195,10 @@ local function update( event )
 	updateBlasts();
 	updateSpikes();
 	updateGhosts();
+	updateBossSpit();
+	if (boss.isAlive == true) then
+		updateBoss();
+	end
 end
 
 --Functions
@@ -218,6 +245,54 @@ function updateMonster()
 	collisionRect.y = monster.y;	
 end
 
+function updateBoss()
+	if (boss.health < 0) then
+		if (boss.y > 210) then
+			boss.goingDown = false;
+		end
+		if (boss.y < 100) then
+			boss.goingDown = true;
+		end
+		if (boss.goingDown) then
+			boss.y = boss.y + 2;
+		else
+			boss.y = boss.y - 2;
+		end
+	else
+		boss.alpha = boss.alpha - .01;
+	end
+
+	if (boss.alpha <= 0) then
+		boss.isAlive = false;
+		boss.x = 300;
+		boss.y = 550;
+		boss.alpha = 1;
+		boss.health = 10;
+		inEvent = 0;
+		boss.spitCycle = 0;
+	end
+end
+
+function updateBossSpit()
+	for i = 1, bossSpits.numChildren, 1 do
+		if (bossSpits[i].isAlive) then
+			(bossSpits[i]):translate( speed * -1, 0 );
+			if (bossSpits[i].y > monster.y) then
+				bossSpits[i].y = bossSpits[i].y - 1;
+			end
+			if (bossSpits[i].y < monster.y) then
+				bossSpits[i].y = bossSpits[i].y + 1;
+			end
+			if (bossSpits[i].x < -80) then
+				bossSpits[i].x = 400;
+				bossSpits[i].y = 550;
+				bossSpits[i].speed = 0;
+				bossSpits[i].isAlive = false;
+			end
+		end
+	end
+end
+
 function updateBlocks()
 	for i = 1, blocks.numChildren, 1 do
 		if (i > 1) then
@@ -226,8 +301,26 @@ function updateBlocks()
 			newX = (blocks[8]).x + 79 - speed;
 		end
 		if ((blocks[i]).x < -40) then
-			score = score + 1;
-			scoreText.text = "score: " .. score;
+			if (boss.isAlive == false) then
+				score = score + 1;
+				scoreText.text = "score: " .. score;
+			else
+				boss.spitCycle = boss.spitCycle + 1;
+				if (boss.y > 100 and boss.y < 300 and boss.spitCycle % 3 == 0) then
+					for i = 1, bossSpits.numChildren, 1 do
+						if (bossSpits[i].isAlive == false) then
+							bossSpits[i].isAlive = true;
+							bossSpits[i].x = boss.x - 35;
+							bossSpits[i].y = boss.y + 55;
+							bossSpits[i].speed = math.random(5, 10);
+							break;
+						end
+					end
+				end
+			end
+			if (inEvent == 15) then
+				groundLevel = groundMin;
+			end
 			if (inEvent == 11) then
 				(blocks[i]).x, (blocks[i]).y = newX, 600;
 			else
@@ -303,6 +396,16 @@ function checkCollisions()
 			end
 		end
 	end
+
+	--if monster hits boss spit
+	for i = 1, bossSpits.numChildren, 1 do
+		if (bossSpits[i].isAlive == true) then
+			if(((  ((monster.y-bossSpits[a].y))<45)) and ((  ((monster.y-bossSpits[a].y))>-45)) and ((  ((monster.x-bossSpits[a].x))>-45)) ) then
+				speed = 0;
+				monster.isAlive = false;
+				monster:pause( );
+				gameOver.x = display.contentWidth * .65;
+				gameOver.y = display.contentHeight / 2;
 end
 
 function updateBlasts()
@@ -343,6 +446,32 @@ function updateBlasts()
           ghosts[j].speed = 0
         end
       end
+    end
+
+    --check boss collision
+    if (boss.isAlive == true) then
+    	if (blasts[i].y - 25 > boss.y - 120 and blasts[i].y + 25 < boss.y + 120 and boss.x - 40 < blasts[i].x + 25 and boss.x + 40 > blasts[i].x - 25) then
+    		blasts[i].x = 800;
+    		blasts[i].y = 500;
+    		blasts[i].isAlive = false;
+    		boss.health = boss.health - 1;
+    	end
+    end
+
+    --check boss spit collision
+    for j = 1, bossSpits.numChildren, 1 do
+    	if (bossSpits[j].isAlive == true) then
+    		if (blasts[i].y - 20 > bossSpits[j].y - 120 and blasts[i].y + 20 < bossSpits[j].y + 120 and bossSpits[j].x - 25 < blasts[i].x + 20 and bossSpits[j].x + 25 > blasts[i.x - 20) then
+    			blasts[i].x = 800;
+    			blasts[j].x = 500;
+    			blasts[i].isAlive = false;
+
+    			bossSpits[j].x = 400;
+    			bossSpits[j].y = 550;
+    			bossSpits[j].isAlive = false;
+    			bossSpits[j].speed = 0;
+    		end
+    	end
     end
   end
 end
@@ -391,30 +520,40 @@ function checkEvent()
 	if (inEvent > 0 and eventRun > 0) then
 		--do nothing
 	else
-		local check = math.random(100);
-
-		--Raise/Lower ground event
-		if (check > 80 and check < 99) then
-			inEvent = math.random(10);
-			eventRun = 1;
+		if (boss.isAlive == false and score % 10 == 0) then
+			boss.isAlive = true;
+			boss.x = 400;
+			boss.y = -200;
+			boss.health = 10;
 		end
+		if (boss.isAlive == true) then
+			inEvent = 15;
+		else
+			local check = math.random(100);
 
-		--Pit event
-		if (check > 98) then
-			inEvent = 11;
-			eventRun = 2;
-		end
+			--Raise/Lower ground event
+			if (check > 80 and check < 99) then
+				inEvent = math.random(10);
+				eventRun = 1;
+			end
 
-		--spike event
-		if (check > 72 and check < 81) then
-			inEvent = 12;
-			eventRun = 1;
-		end
+			--Pit event
+			if (check > 98) then
+				inEvent = 11;
+				eventRun = 2;
+			end
 
-		--ghost event
-		if (check > 60 and check < 73) then
-			inEvent = 13;
-			eventRun = 1;
+			--spike event
+			if (check > 72 and check < 81) then
+				inEvent = 12;
+				eventRun = 1;
+			end
+
+			--ghost event
+			if (check > 60 and check < 73) then
+				inEvent = 13;
+				eventRun = 1;
+			end
 		end
 	end
 	if (inEvent > 0) then
@@ -460,11 +599,22 @@ function restartGame()
 	speed = 5;
 
 	monster.isAlive = true;
-	monster.x = 110;
+	monster.x = 60;
 	monster.y = 200;
 	monster:setSequence("running");
 	monster:play();
 	monster.rotation = 0;
+
+	--reset boss
+	boss.isAlive = false;
+	boss.x = 300;
+	boss.y = 550;
+
+	for i = 1, bossSpits.numChildren, 1 do
+		bossSpits[i].x = 400;
+		bossSpits[i].y = 550;
+		bossSpits[i].isAlive = false;
+	end
 
 	groundLevel = groundMin;
 	for i = 1, blocks.numChildren, 1 do
