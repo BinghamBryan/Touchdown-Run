@@ -144,7 +144,7 @@ collisionRect:setStrokeColor( 180, 180, 180 );
 collisionRect.alpha = 0;
 
 --Boss
-local boss = display.newImage( "boss.png", 150, 150 );
+local boss = display.newImage( "images/boss.png", 150, 150 );
 boss.x = 300;
 boss.y = 550;
 boss.isAlive = false;
@@ -154,13 +154,13 @@ boss.canShoot = false;
 boss.spitCycle = 0;
 
 for i = 1, 3, 1 do
-	local bossSpit = display.newImage( "bossSpit.png" );
+	local bossSpit = display.newImage( "images/bossSpit.png" );
 	bossSpit.x = 400;
 	bossSpit.y = 550;
 	bossSpit.isAlive = false;
 	bossSpit.speed = 3;
 	bossSpit.speed = 3;
-	bossSpits:insert(bossSpits);
+	bossSpits:insert(bossSpit);
 end
 
 --Game Over
@@ -191,7 +191,6 @@ local function update( event )
 	updateSpeed();
 	updateMonster();
 	updateBlocks();
-	checkCollisions();
 	updateBlasts();
 	updateSpikes();
 	updateGhosts();
@@ -199,6 +198,7 @@ local function update( event )
 	if (boss.isAlive == true) then
 		updateBoss();
 	end
+	checkCollisions();
 end
 
 --Functions
@@ -246,7 +246,7 @@ function updateMonster()
 end
 
 function updateBoss()
-	if (boss.health < 0) then
+	if (boss.health > 0) then
 		if (boss.y > 210) then
 			boss.goingDown = false;
 		end
@@ -400,12 +400,15 @@ function checkCollisions()
 	--if monster hits boss spit
 	for i = 1, bossSpits.numChildren, 1 do
 		if (bossSpits[i].isAlive == true) then
-			if(((  ((monster.y-bossSpits[a].y))<45)) and ((  ((monster.y-bossSpits[a].y))>-45)) and ((  ((monster.x-bossSpits[a].x))>-45)) ) then
+			if(((  ((monster.y-bossSpits[i].y))<45)) and ((  ((monster.y-bossSpits[i].y))>-45)) and ((  ((monster.x-bossSpits[i].x))>-45)) ) then
 				speed = 0;
 				monster.isAlive = false;
 				monster:pause( );
 				gameOver.x = display.contentWidth * .65;
 				gameOver.y = display.contentHeight / 2;
+			end
+		end
+	end
 end
 
 function updateBlasts()
@@ -461,7 +464,7 @@ function updateBlasts()
     --check boss spit collision
     for j = 1, bossSpits.numChildren, 1 do
     	if (bossSpits[j].isAlive == true) then
-    		if (blasts[i].y - 20 > bossSpits[j].y - 120 and blasts[i].y + 20 < bossSpits[j].y + 120 and bossSpits[j].x - 25 < blasts[i].x + 20 and bossSpits[j].x + 25 > blasts[i.x - 20) then
+    		if (blasts[i].y - 20 > bossSpits[j].y - 120 and blasts[i].y + 20 < bossSpits[j].y + 120 and bossSpits[j].x - 25 < blasts[i].x + 20 and bossSpits[j].x + 25 > blasts[i].x - 20) then
     			blasts[i].x = 800;
     			blasts[j].x = 500;
     			blasts[i].isAlive = false;
