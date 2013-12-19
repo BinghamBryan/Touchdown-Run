@@ -351,7 +351,7 @@ function checkCollisions()
 	wasOnGround = onGround;
 
 	for i = 1, blocks.numChildren, 1 do
-		if (collisionRect.y - 10 > blocks[i].y - 170 and blocks[i].x - 40 < collisionRect.x and blocks[i].x + 40 > collisionRect.x) then
+		if (hasCollided(collisionRect, blocks[i])) then
 			speed = 0;
 			monster.isAlive = false;
 			monster:pause( );
@@ -361,7 +361,7 @@ function checkCollisions()
 	end
 
 	for i = 1, blocks.numChildren, 1 do
-		if (monster.y >= blocks[i].y - 170 and blocks[i].x < monster.x + 60 and blocks[i].x > monster.x - 60) then
+		if (hasCollided(monster, blocks[i])) then
 			monster.y = blocks[i].y - 171;
 			onGround = true;
 			break;
@@ -373,7 +373,7 @@ function checkCollisions()
 	--if monster runs into spikes
 	for i = 1, spikes.numChildren, 1 do
 		if (spikes[i].isAlive == true) then
-			if (collisionRect.y - 10 > spikes[i].y - 170 and spikes[i].x - 40 < collisionRect.x and spikes[i].x + 40 > collisionRect.x) then
+			if (hasCollided(collisionRect, spikes[i])) then
 				--stop the monster
 				speed = 0;
 				monster.isAlive = false;
@@ -387,7 +387,7 @@ function checkCollisions()
 	--if monsters hits a ghost
 	for i = 1, ghosts.numChildren, 1 do
 		if (ghosts[i].isAlive == true) then
-			if (((((monster.y - ghosts[i].y)) < 70) and ((monster.y - ghosts[i].y) > -70)) and (ghosts[i].x - 40 < collisionRect.x and ghosts[i].x + 40 > collisionRect.x)) then
+			if (hasCollided(monster, ghosts[i])) then
 				speed = 0;
 				monster.isAlive = false;
 				monster:pause( );
@@ -400,7 +400,7 @@ function checkCollisions()
 	--if monster hits boss spit
 	for i = 1, bossSpits.numChildren, 1 do
 		if (bossSpits[i].isAlive == true) then
-			if(((  ((monster.y-bossSpits[i].y))<45)) and ((  ((monster.y-bossSpits[i].y))>-45)) and ((  ((monster.x-bossSpits[i].x))>-45)) ) then
+			if(hasCollided(monster, bossSpits[i])) then
 				speed = 0;
 				monster.isAlive = false;
 				monster:pause( );
@@ -425,7 +425,7 @@ function updateBlasts()
 		--check spike collision
 		for j = 1, spikes.numChildren, 1 do
 			if (spikes[j].isAlive == true) then
-				if (blasts[i].y - 25 > spikes[j].y - 120 and blasts[i].y + 25 < spikes[j].y + 120 and spikes[j].x - 40 < blasts[i].x + 25 and spikes[j].x + 40 > blasts[i].x - 25) then
+				if (hasCollided(blasts[i], spikes[j])) then
 					blasts[i].x = 800;
 					blasts[i].y = 500;
 					blasts[i].isAlive = false;
@@ -439,7 +439,7 @@ function updateBlasts()
 		--check ghost collision
 		for j = 1, ghosts.numChildren, 1 do
       if(ghosts[j].isAlive == true) then
-        if(blasts[i].y - 25 > ghosts[j].y - 120 and blasts[i].y + 25 < ghosts[j].y + 120 and ghosts[j].x - 40 < blasts[i].x + 25 and ghosts[j].x + 40 > blasts[i].x - 25) then
+        if(hasCollided(blasts[i], ghosts[j])) then
           blasts[i].x = 800
           blasts[i].y = 500
           blasts[i].isAlive = false
@@ -453,7 +453,7 @@ function updateBlasts()
 
     --check boss collision
     if (boss.isAlive == true) then
-    	if (blasts[i].y - 25 > boss.y - 120 and blasts[i].y + 25 < boss.y + 120 and boss.x - 40 < blasts[i].x + 25 and boss.x + 40 > blasts[i].x - 25) then
+    	if (hasCollided(blasts[i], boss)) then
     		blasts[i].x = 800;
     		blasts[i].y = 500;
     		blasts[i].isAlive = false;
@@ -464,7 +464,7 @@ function updateBlasts()
     --check boss spit collision
     for j = 1, bossSpits.numChildren, 1 do
     	if (bossSpits[j].isAlive == true) then
-    		if (blasts[i].y - 20 > bossSpits[j].y - 120 and blasts[i].y + 20 < bossSpits[j].y + 120 and bossSpits[j].x - 25 < blasts[i].x + 20 and bossSpits[j].x + 25 > blasts[i].x - 20) then
+    		if (hasCollided(blasts[i], bossSpits[j])) then
     			blasts[i].x = 800;
     			blasts[j].x = 500;
     			blasts[i].isAlive = false;
@@ -523,7 +523,7 @@ function checkEvent()
 	if (inEvent > 0 and eventRun > 0) then
 		--do nothing
 	else
-		if (boss.isAlive == false and score % 10 == 0) then
+		if (boss.isAlive == false and score % 50 == 0) then
 			boss.isAlive = true;
 			boss.x = 400;
 			boss.y = -200;
@@ -647,6 +647,24 @@ function restartGame()
 	backgroundnear2.x = 760;
 	backgroundnear2.y = 160;
 end
+
+--Collision Helper
+function hasCollided ( obj1, obj2)
+	if ( obj1 == nil ) then  --make sure the first object exists
+      return false
+   end
+   if ( obj2 == nil ) then  --make sure the other object exists
+      return false
+   end
+
+   local left = obj1.contentBounds.xMin <= obj2.contentBounds.xMin and obj1.contentBounds.xMax >= obj2.contentBounds.xMin
+   local right = obj1.contentBounds.xMin >= obj2.contentBounds.xMin and obj1.contentBounds.xMin <= obj2.contentBounds.xMax
+   local up = obj1.contentBounds.yMin <= obj2.contentBounds.yMin and obj1.contentBounds.yMax >= obj2.contentBounds.yMin
+   local down = obj1.contentBounds.yMin >= obj2.contentBounds.yMin and obj1.contentBounds.yMin <= obj2.contentBounds.yMax
+
+   return (left or right) and (up or down)
+ end
+
 
 --Listener functions
 function touched( event )
